@@ -29,7 +29,7 @@
 //定义包头长度，RTMP_MAX_HEADER_SIZE=18
 #define RTMP_HEAD_SIZE   (sizeof(RTMPPacket)+RTMP_MAX_HEADER_SIZE)
 //存储Nal单元数据的buffer大小
-#define BUFFER_SIZE 32768
+#define BUFFER_SIZE 32768   //32*1024
 //搜寻Nal单元时的一些标志
 #define GOT_A_NAL_CROSS_BUFFER BUFFER_SIZE+1
 #define GOT_A_NAL_INCLUDE_A_BUFFER BUFFER_SIZE+2
@@ -420,14 +420,14 @@ int ReadFirstNaluFromBuf(NaluUnit &nalu,int (*read_buffer)(uint8_t *buf, int buf
 		if(m_pFileBuf[nalhead_pos++] == 0x00 && 
 			m_pFileBuf[nalhead_pos++] == 0x00) 
 		{
-			if(m_pFileBuf[nalhead_pos++] == 0x01)
+			if(m_pFileBuf[nalhead_pos++] == 0x01)//0x000001
 				goto gotnal_head;
 			else 
 			{
-				//cuz we have done an i++ before,so we need to roll back now
+				//cuz we have done an i++ before,so we need to roll back now 在if的时候+1了，这里先-1
 				nalhead_pos--;		
 				if(m_pFileBuf[nalhead_pos++] == 0x00 && 
-					m_pFileBuf[nalhead_pos++] == 0x01)
+					m_pFileBuf[nalhead_pos++] == 0x01)//0x00000001
 					goto gotnal_head;
 				else
 					continue;
@@ -440,12 +440,12 @@ int ReadFirstNaluFromBuf(NaluUnit &nalu,int (*read_buffer)(uint8_t *buf, int buf
 gotnal_head:
 		//normal case:the whole nal is in this m_pFileBuf
 		naltail_pos = nalhead_pos;  
-		while (naltail_pos<m_nFileBufSize)  
+		while (naltail_pos<m_nFileBufSize)  //现在已经找到头了，现在循环开始找尾
 		{  
 			if(m_pFileBuf[naltail_pos++] == 0x00 && 
 				m_pFileBuf[naltail_pos++] == 0x00 )
 			{  
-				if(m_pFileBuf[naltail_pos++] == 0x01)
+				if(m_pFileBuf[naltail_pos++] == 0x01)//0x000001 找到下一个nal头，nalu.size是nalu长度
 				{
 					nalu.size = (naltail_pos-3)-nalhead_pos;
 					break;
@@ -454,7 +454,7 @@ gotnal_head:
 				{
 					naltail_pos--;
 					if(m_pFileBuf[naltail_pos++] == 0x00 &&
-						m_pFileBuf[naltail_pos++] == 0x01)
+						m_pFileBuf[naltail_pos++] == 0x01)//同样找到下一个0x00000001这种nal头，nalu.size是nalu长度
 					{	
 						nalu.size = (naltail_pos-4)-nalhead_pos;
 						break;
@@ -463,7 +463,7 @@ gotnal_head:
 			}  
 		}
 
-		nalu.type = m_pFileBuf[nalhead_pos]&0x1f; 
+		nalu.type = m_pFileBuf[nalhead_pos]&0x1f; //获取nalu.type
 		memcpy(m_pFileBuf_tmp,m_pFileBuf+nalhead_pos,nalu.size);
 		nalu.data=m_pFileBuf_tmp;
 		nalhead_pos=naltail_pos;
@@ -659,10 +659,10 @@ int RTMP264_Send(int (*read_buffer)(unsigned char *buf, int buf_size))
 	//if(ret!=1)
 	//	return FALSE;
 
-	unsigned int tick = 0;  
-	unsigned int tick_gap = 1000/metaData.nFrameRate; 
+	unsigned int tick = 0;  //当前帧的时间戳
+	unsigned int tick_gap = 1000/metaData.nFrameRate; //framerate为25帧时，tick_gap为40
 	ReadOneNaluFromBuf(naluUnit,read_buffer);
-	int bKeyframe  = (naluUnit.type == 0x05) ? TRUE : FALSE;
+	int bKeyframe  = (naluUnit.type == 0x05) ? TRUE : FALSE;//为5时是IDR图像的帧
 	while(SendH264Packet(naluUnit.data,naluUnit.size,bKeyframe,tick))  
 	{    
 got_sps_pps:
@@ -671,12 +671,12 @@ got_sps_pps:
 		last_update=RTMP_GetTime();
 		if(!ReadOneNaluFromBuf(naluUnit,read_buffer))
 				goto end;
-		if(naluUnit.type == 0x07 || naluUnit.type == 0x08)
+		if(naluUnit.type == 0x07 || naluUnit.type == 0x08)//0x07和0x08分别表示SPS和PPS，然后跳过发送这两个
 			goto got_sps_pps;
 		bKeyframe  = (naluUnit.type == 0x05) ? TRUE : FALSE;
 		tick +=tick_gap;
 		now=RTMP_GetTime();
-		msleep(tick_gap-now+last_update);  
+		msleep(tick_gap-now+last_update);  //等同(tick_gap-(now-last_update))减去while中函数处理的时间 
 		//msleep(40);
 	}  
 	end:

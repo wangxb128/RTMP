@@ -10,6 +10,7 @@
  *
  * 本程序用于将FLV格式的视音频文件使用RTMP推送至RTMP流媒体服务器。
  * This program can send local flv file to net server as a rtmp live stream.
+ *使用librtmp发布RTMP流的可以使用两种API：RTMP_SendPacket()和RTMP_Write()。使用RTMP_SendPacket()发布流的时候的函数执行流程图如下图所示。使用RTMP_Write()发布流的时候的函数执行流程图相差不大
  */
 
 #include <stdio.h>
@@ -135,7 +136,7 @@ int publish_using_packet(){
 		CleanupSockets();
 		return -1;
 	}
-	
+	//RTMP_EnableWrite发布流的时候必须要使用。如果不使用则代表接收流
 	//if unable,the AMF command would be 'play' instead of 'publish'
 	RTMP_EnableWrite(rtmp);	
 	
@@ -213,6 +214,7 @@ int publish_using_packet(){
 			RTMP_Log(RTMP_LOGERROR,"rtmp is not connect\n");
 			break;
 		}
+		//发送一个RTMP数据RTMPPacket
 		if (!RTMP_SendPacket(rtmp,packet,0)){
 			RTMP_Log(RTMP_LOGERROR,"Send Error\n");
 			break;

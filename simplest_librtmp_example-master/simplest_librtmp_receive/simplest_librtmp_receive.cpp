@@ -62,7 +62,7 @@ int main(int argc, char* argv[])
 	RTMP *rtmp=RTMP_Alloc();
 	//初始化结构体“RTMP”中的成员变量
 	RTMP_Init(rtmp);
-	//set connection timeout,default 30s
+	//set connection timeout,default 30s 连接超时时间
 	rtmp->Link.timeout=10;	
 	// 设置输入的RTMP连接的URL 修改URL为：rtmp://58.200.131.2:1935/livetv/cctv1可用
 	if(!RTMP_SetupURL(rtmp,"rtmp://media3.scctv.net/live/scctv_800"))
