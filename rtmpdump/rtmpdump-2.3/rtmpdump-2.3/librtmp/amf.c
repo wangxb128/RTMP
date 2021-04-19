@@ -31,7 +31,11 @@
 #include "amf.h"
 #include "log.h"
 #include "bytes.h"
-
+/**
+ * AMF编码广泛用于Adobe公司的Flash以及Flex系统中。由于RTMP协议也是Adobe公司的，
+ * 所以它也使用AMF进行通信。RTMPDump 如果想实现RTMP协议的流媒体的下载保存，
+ * 就必须可以编码和解码AMF格式的数据。
+ */
 static const AMFObjectProperty AMFProp_Invalid = { {0, 0}, AMF_INVALID };
 static const AVal AV_empty = { 0, 0 };
 

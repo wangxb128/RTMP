@@ -390,7 +390,11 @@ HandShake(RTMP * r, int FP9HandShake)
       offalg = 1;
     }
   else
+  {
+	  //0x03代表RTMP协议的版本（客户端要求的）数组竟然能有“-1”下标
+	  //C0中的字段(1B)
     clientsig[-1] = 0x03;
+  }
 
   uptime = htonl(RTMP_GetTime());
   memcpy(clientsig, &uptime, 4);
